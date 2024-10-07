@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Code Editor</title>
+    <title>Live Code Editor with Suggestions</title>
     <style>
         * {
             margin: 0;
@@ -25,6 +25,7 @@
             background-color: #2d2d2d;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .editor textarea {
@@ -41,18 +42,26 @@
             font-family: Consolas, "Courier New", monospace;
         }
 
-        .library {
-            height: 20%;
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-        }
-
-        .library select {
+        .suggestions {
             background-color: #333;
             color: white;
-            padding: 5px;
+            position: absolute;
+            top: 50px;
+            left: 10px;
             border-radius: 5px;
+            width: 90%;
+            max-height: 100px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .suggestions div {
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .suggestions div:hover {
+            background-color: #555;
         }
 
         .preview {
@@ -72,21 +81,8 @@
 </head>
 <body>
     <div class="editor">
-        <div class="library">
-            <select id="htmlSnippets">
-                <option value="<h1>Hello World</h1>">&lt;h1&gt;Hello World&lt;/h1&gt;</option>
-                <option value="<p>This is a paragraph</p>">&lt;p&gt;This is a paragraph&lt;/p&gt;</option>
-            </select>
-            <select id="cssSnippets">
-                <option value="body { background-color: lightblue; }">body { background-color: lightblue; }</option>
-                <option value="p { color: red; }">p { color: red; }</option>
-            </select>
-            <select id="jsSnippets">
-                <option value="console.log('Hello World');">console.log('Hello World');</option>
-                <option value="alert('This is an alert');">alert('This is an alert');</option>
-            </select>
-        </div>
         <textarea id="codeArea" placeholder="Type your HTML, CSS, or JS here..."></textarea>
+        <div class="suggestions" id="suggestions"></div>
     </div>
     <div class="preview">
         <iframe id="livePreview"></iframe>
@@ -95,27 +91,56 @@
     <script>
         const codeArea = document.getElementById('codeArea');
         const livePreview = document.getElementById('livePreview').contentWindow.document;
+        const suggestionsBox = document.getElementById('suggestions');
 
-        const htmlSnippets = document.getElementById('htmlSnippets');
-        const cssSnippets = document.getElementById('cssSnippets');
-        const jsSnippets = document.getElementById('jsSnippets');
+        const snippets = {
+            html: ['<div>', '<h1>', '<p>', '<a href="">', '<img src="" alt="">', '<button>'],
+            css: ['color:', 'background-color:', 'font-size:', 'border:', 'padding:'],
+            js: ['console.log()', 'document.querySelector()', 'function()', 'if()', 'alert()']
+        };
 
-        htmlSnippets.addEventListener('change', function() {
-            codeArea.value += this.value;
+        codeArea.addEventListener('input', function() {
             updatePreview();
+            showSuggestions();
         });
 
-        cssSnippets.addEventListener('change', function() {
-            codeArea.value += `<style>${this.value}</style>`;
-            updatePreview();
+        codeArea.addEventListener('keydown', function(event) {
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                insertSuggestion();
+            }
         });
 
-        jsSnippets.addEventListener('change', function() {
-            codeArea.value += `<script>${this.value}</script>`;
-            updatePreview();
-        });
+        function showSuggestions() {
+            const value = codeArea.value;
+            const lastWord = value.split(/\s/).pop().toLowerCase();
+            let matches = [];
 
-        codeArea.addEventListener('input', updatePreview);
+            if (lastWord.startsWith('<')) {
+                matches = snippets.html.filter(snippet => snippet.startsWith(lastWord));
+            } else if (lastWord.includes(':')) {
+                matches = snippets.css.filter(snippet => snippet.startsWith(lastWord));
+            } else if (lastWord.includes('(')) {
+                matches = snippets.js.filter(snippet => snippet.startsWith(lastWord));
+            }
+
+            if (matches.length > 0) {
+                suggestionsBox.innerHTML = matches.map(match => `<div>${match}</div>`).join('');
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        }
+
+        function insertSuggestion() {
+            const firstSuggestion = document.querySelector('.suggestions div');
+            if (firstSuggestion) {
+                const value = codeArea.value.split(/\s/).slice(0, -1).join(' ') + ' ' + firstSuggestion.innerText;
+                codeArea.value = value;
+                suggestionsBox.style.display = 'none';
+                updatePreview();
+            }
+        }
 
         function updatePreview() {
             livePreview.open();
