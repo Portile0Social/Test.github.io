@@ -10,28 +10,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.6/addon/hint/show-hint.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.6/addon/hint/show-hint.min.css">
     <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        #editor-container {
+            width: 50%;
+            border-right: 1px solid #ccc;
+        }
+
         .CodeMirror {
             height: 100vh;
+        }
+
+        #output {
+            width: 50%;
+            padding: 10px;
+            overflow: auto;
         }
     </style>
 </head>
 <body>
-    <textarea id="code" name="code">
-        <html>
-            <head>
-                <title></title>
-            </head>
-            <body>
-                
-            </body>
-        </html>
-    </textarea>
+    <div id="editor-container">
+        <textarea id="code" name="code">
+            <html>
+                <head>
+                    <title></title>
+                </head>
+                <body>
+                    
+                </body>
+            </html>
+        </textarea>
+    </div>
+
+    <iframe id="output"></iframe>
 
     <script>
         var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
             mode: 'htmlmixed',
             lineNumbers: true,
             extraKeys: {"Ctrl-Space": "autocomplete"},
+        });
+
+        editor.on("change", function() {
+            var outputFrame = document.getElementById('output');
+            var code = editor.getValue();
+            outputFrame.srcdoc = code;
         });
     </script>
 </body>
